@@ -92,7 +92,7 @@ tmedia_session_jsep.prototype.__set = function (o_param) {
         case 'mute-video':
             {
                 if (this.o_pc && typeof o_param.o_value == "boolean") {
-                    if (this.o_pc.mute) { 
+                    if (this.o_pc.mute) {
                         this.o_pc.mute((o_param.s_key === 'mute-audio') ? "audio" : "video", o_param.o_value);
                     }
                     else if (this.o_local_stream) {
@@ -208,7 +208,7 @@ tmedia_session_jsep.prototype.decorate_lo = function () {
             if (o_hdr_M.o_hdr_C && o_hdr_M.o_hdr_C.s_addr === "0.0.0.0") {
                 o_hdr_M.o_hdr_C.s_addr = "127.0.0.1";
             }
-            
+
             // bandwidth
             if(this.o_bandwidth) {
                 if(this.o_bandwidth.audio && o_hdr_M.s_media.toLowerCase() == "audio") {
@@ -371,7 +371,9 @@ tmedia_session_jsep.prototype.close = function () {
             // TODO: On Firefox 26: Error: "removeStream not implemented yet"
             try { this.o_pc.removeStream(this.o_local_stream); } catch (e) { }
             if(!this.b_cache_stream || (this.e_type == tmedia_type_e.SCREEN_SHARE)) { // only stop if caching is disabled or screenshare
-                this.o_local_stream.stop();
+                this.o_local_stream.getTracks().forEach(function (track) {
+                    track.stop();
+                });
             }
             this.o_local_stream = null;
         }
@@ -554,8 +556,8 @@ tmedia_session_jsep00.prototype.__set_ro = function (o_sdp, b_is_offer) {
 
 function tmedia_session_jsep01(o_mgr) {
     tmedia_session_jsep.call(this, o_mgr);
-    this.o_media_constraints = 
-    { 'mandatory': 
+    this.o_media_constraints =
+    { 'mandatory':
         {
             'OfferToReceiveAudio': !!(this.e_type.i_id & tmedia_type_e.AUDIO.i_id),
             'OfferToReceiveVideo': !!(this.e_type.i_id & tmedia_type_e.VIDEO.i_id)
@@ -612,7 +614,7 @@ tmedia_session_jsep01.onGetUserMediaSuccess = function (o_stream, _This) {
         else {
             // Probably call held
         }
-        This.o_mgr.set_stream_local(o_stream);        
+        This.o_mgr.set_stream_local(o_stream);
 
         var b_answer = ((This.b_sdp_ro_pending || This.b_sdp_ro_offer) && (This.o_sdp_ro != null));
         if (b_answer) {
@@ -738,14 +740,14 @@ tmedia_session_jsep01.onIceCandidate = function (o_event, _This) {
     var iceState = (This.o_pc.iceGatheringState || This.o_pc.iceState);
 
     tsk_utils_log_info("onIceCandidate = " + iceState);
-    
+
     if (iceState === "complete" || (o_event && !o_event.candidate)) {
         tsk_utils_log_info("ICE GATHERING COMPLETED!");
         tmedia_session_jsep01.onIceGatheringCompleted(This);
     }
     else if (This.o_pc.iceState === "failed") {
         tsk_utils_log_error("Ice state is 'failed'");
-        This.o_mgr.callback(tmedia_session_events_e.GET_LO_FAILED, This.e_type); 
+        This.o_mgr.callback(tmedia_session_events_e.GET_LO_FAILED, This.e_type);
     }
 }
 
@@ -795,7 +797,7 @@ tmedia_session_jsep01.prototype.__get_lo = function () {
         }
         var o_iceServers = this.ao_ice_servers;
         if(!o_iceServers){ // defines default ICE servers only if none exist (because WebRTC requires ICE)
-            // HACK Nightly 21.0a1 (2013-02-18): 
+            // HACK Nightly 21.0a1 (2013-02-18):
             // - In RTCConfiguration passed to RTCPeerConnection constructor: FQDN not yet implemented (only IP-#s). Omitting "stun:stun.l.google.com:19302"
             // - CHANGE-REQUEST not supported when using "numb.viagenie.ca"
             // - (stun/ERR) Missing XOR-MAPPED-ADDRESS when using "stun.l.google.com"
